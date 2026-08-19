@@ -1,0 +1,2 @@
+import { redirect } from "next/navigation";
+export default async function ProceduresPage(props: PageProps<"/admin/tramites">) { const params = await props.searchParams; const query = new URLSearchParams(); if (typeof params.status === "string") query.set("status", params.status); if (typeof params.filter === "string") query.set("filter", params.filter); redirect(`/admin/expedientes${query.size ? `?${query}` : ""}`); }

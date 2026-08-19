@@ -1,0 +1,11 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
+import { updateProcedureDetails } from "@/app/admin/actions";
+import { getProcedure } from "@/lib/db/procedures";
+
+export const metadata = { title: "Editar trámite" };
+export default async function EditProcedurePage(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params; const procedure = await getProcedure(id); if (!procedure) notFound();
+  return <div className="max-w-3xl"><Link href={`/admin/tramites/${procedure.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue"><ArrowLeft size={16} />Volver al trámite</Link><h1 className="mt-5 text-3xl font-bold tracking-tight text-navy">Editar trámite</h1><p className="mt-2 text-sm text-slate-600">Puedes actualizar la unidad y las notas. El servicio y su checklist se conservan para proteger el historial del expediente.</p><form action={updateProcedureDetails} className="mt-8 grid gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"><input type="hidden" name="procedureId" value={procedure.id} /><div className="rounded-xl bg-slate-50 p-4 text-sm"><p className="text-slate-400">Servicio</p><p className="mt-1 font-bold text-navy">{procedure.service.name}</p></div><label className="field">Unidad vinculada<select className="input" name="vehicleId" defaultValue={procedure.vehicleId ?? ""}><option value="">Sin unidad vinculada</option>{procedure.client.vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.brand} {vehicle.model} ({vehicle.year})</option>)}</select></label><label className="field">Mensaje público<textarea className="input min-h-24" name="publicMessage" defaultValue={procedure.publicMessage ?? ""} /></label><label className="field">Notas internas<textarea className="input min-h-32" name="internalNotes" defaultValue={procedure.internalNotes ?? ""} /></label><div className="flex justify-end gap-3 border-t border-slate-100 pt-5"><Link className="button button-outline" href={`/admin/tramites/${procedure.id}`}>Cancelar</Link><button className="button" type="submit">Guardar cambios</button></div></form></div>;
+}
