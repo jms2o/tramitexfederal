@@ -5,7 +5,7 @@ import { Prisma, ProcedureStatus } from "@/app/generated/prisma/client";
 import { requireClient } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { FileValidationError, removePrivateFile, savePrivateFile } from "@/lib/security/private-storage";
-import { clientProcedureSchema, clientProfileSchema, supportTicketSchema } from "@/lib/validations/client-portal";
+import { advisorAssistanceSchema, clientProcedureSchema, clientProfileSchema, supportTicketSchema } from "@/lib/validations/client-portal";
 
 function formValues(formData: FormData) {
   return Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, typeof value === "string" ? value : ""]));
@@ -38,6 +38,42 @@ export async function createClientProcedure(formData: FormData) {
   revalidatePath("/cuenta");
   revalidatePath("/cuenta/mis-tramites");
   return { ok: true, procedureId: procedure.id, folio: procedure.folio, requirements: procedure.requirements };
+}
+
+export async function createAdvisorAssistanceRequest(formData: FormData) {
+  const { session, client } = await requireClient();
+  const parsed = advisorAssistanceSchema.safeParse(formValues(formData));
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Revisa los datos de contacto." };
+
+  const service = await prisma.service.findFirst({ where: { id: parsed.data.serviceId, isActive: true }, select: { id: true, name: true } });
+  if (!service) return { ok: false, message: "Selecciona un trámite disponible." };
+
+  const contactLabels = { WHATSAPP: "WhatsApp", PHONE: "Llamada telefónica", EMAIL: "Correo electrónico" } as const;
+  const body = [
+    `Trámite solicitado: ${service.name}`,
+    `Nombre: ${parsed.data.fullName}`,
+    `Correo: ${parsed.data.email}`,
+    `Teléfono: ${parsed.data.phone}`,
+    `Medio preferido: ${contactLabels[parsed.data.contactMethod]}`,
+    `Horario preferido: ${parsed.data.preferredTime || "No especificado"}`,
+    `Comentarios: ${parsed.data.comments || "Sin comentarios"}`,
+  ].join("\n");
+
+  const ticket = await prisma.$transaction(async (tx) => {
+    const created = await tx.supportTicket.create({
+      data: {
+        clientId: client.id,
+        subject: `[ASESORIA] ${service.name}`,
+        messages: { create: { authorId: session.user.id, body } },
+      },
+    });
+    await tx.activityLog.create({ data: { userId: session.user.id, action: "Cliente solicitó acompañamiento de asesor", entityType: "SupportTicket", entityId: created.id, metadata: { serviceId: service.id, contactMethod: parsed.data.contactMethod } } });
+    return created;
+  });
+
+  revalidatePath("/cuenta");
+  revalidatePath("/cuenta/soporte");
+  return { ok: true, ticketId: ticket.id, serviceName: service.name, contactMethod: contactLabels[parsed.data.contactMethod] };
 }
 
 export async function uploadClientRequirementDocument(formData: FormData) {
@@ -98,7 +134,14 @@ export async function createSupportTicket(formData: FormData) {
     if (!ownsProcedure) return { ok: false, message: "El trámite seleccionado no te pertenece." };
   }
   const ticket = await prisma.$transaction(async (tx) => {
-    const created = await tx.supportTicket.create({ data: { clientId: client.id, procedureId: parsed.data.procedureId || undefined, subject: parsed.data.subject, messages: { create: { authorId: session.user.id, body: parsed.data.body } } } });
+    const created = await tx.supportTicket.create({
+      data: {
+        clientId: client.id,
+        procedureId: parsed.data.procedureId || undefined,
+        subject: parsed.data.subject,
+        messages: { create: { authorId: session.user.id, body: parsed.data.body } },
+      },
+    });
     await tx.activityLog.create({ data: { userId: session.user.id, action: "Cliente creó un ticket de soporte", entityType: "SupportTicket", entityId: created.id } });
     return created;
   });
