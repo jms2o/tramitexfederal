@@ -134,7 +134,14 @@ export async function createSupportTicket(formData: FormData) {
     if (!ownsProcedure) return { ok: false, message: "El trámite seleccionado no te pertenece." };
   }
   const ticket = await prisma.$transaction(async (tx) => {
-    const created = await tx.supportTicket.create({ data: { clientId: client.id, procedureId: parsed.data.procedureId || undefined, subject: parsed.data.subject, messages: { create: { authorId: session.user.id, body: parsed.data.body } } });
+    const created = await tx.supportTicket.create({
+      data: {
+        clientId: client.id,
+        procedureId: parsed.data.procedureId || undefined,
+        subject: parsed.data.subject,
+        messages: { create: { authorId: session.user.id, body: parsed.data.body } },
+      },
+    });
     await tx.activityLog.create({ data: { userId: session.user.id, action: "Cliente creó un ticket de soporte", entityType: "SupportTicket", entityId: created.id } });
     return created;
   });
