@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   title: { default: "TramitexFederal | Trámites federales sin complicaciones", template: "%s | TramitexFederal" },
   description: "Gestión y asesoría especializada en trámites ante la SICT para particulares, transportistas y empresas.",
   alternates: { canonical: "/" },
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: [{ url: "/icono.svg", type: "image/svg+xml" }],
+    shortcut: "/icono.svg",
+  },
   openGraph: {
     title: "TramitexFederal",
     description: "Soluciones federales sin fronteras.",
