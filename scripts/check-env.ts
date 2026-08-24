@@ -14,6 +14,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().email().or(z.string().regex(/^.+<[^<>\s]+@[^<>\s]+>$/)).optional(),
   SUPABASE_URL: z.url().optional(),
+  SUPABASE_SECRET_KEY: z.string().min(20).optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
   SUPABASE_STORAGE_BUCKET: z.string().min(1).optional(),
   DOCUMENT_STORAGE_PATH: z.string().min(3).optional(),
@@ -31,22 +32,23 @@ const envSchema = z.object({
   }
 
   const hasSupabaseUrl = Boolean(env.SUPABASE_URL);
-  const hasSupabaseKey = Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
-  if (hasSupabaseUrl !== hasSupabaseKey) {
+  const hasSupabaseSecret = Boolean(env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY);
+  if (hasSupabaseUrl !== hasSupabaseSecret) {
     context.addIssue({
       code: "custom",
-      path: [hasSupabaseUrl ? "SUPABASE_SERVICE_ROLE_KEY" : "SUPABASE_URL"],
-      message: "SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben configurarse juntas.",
+      path: [hasSupabaseUrl ? "SUPABASE_SECRET_KEY" : "SUPABASE_URL"],
+      message: "SUPABASE_URL y una secret key de servidor de Supabase deben configurarse juntas.",
     });
   }
 
-  const supabaseStorageConfigured = hasSupabaseUrl && hasSupabaseKey;
+  const supabaseStorageConfigured = hasSupabaseUrl && hasSupabaseSecret;
   if (supabaseStorageConfigured && env.NODE_ENV === "production") {
     if (new URL(env.SUPABASE_URL!).protocol !== "https:") {
       context.addIssue({ code: "custom", path: ["SUPABASE_URL"], message: "SUPABASE_URL debe usar HTTPS en producción." });
     }
-    if (env.SUPABASE_SERVICE_ROLE_KEY!.startsWith("replace-with")) {
-      context.addIssue({ code: "custom", path: ["SUPABASE_SERVICE_ROLE_KEY"], message: "Configura la service role key real en el gestor de secretos." });
+    const serverKey = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY!;
+    if (serverKey.startsWith("replace-with")) {
+      context.addIssue({ code: "custom", path: ["SUPABASE_SECRET_KEY"], message: "Configura la secret key real en el gestor de secretos." });
     }
   }
 
