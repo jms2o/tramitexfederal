@@ -13,7 +13,7 @@ export class FileValidationError extends Error {}
 
 type SupabaseStorageConfig = {
   url: string;
-  serviceRoleKey: string;
+  serverKey: string;
   bucket: string;
 };
 
@@ -25,12 +25,14 @@ function normalizeStorageKey(storageKey: string) {
 
 function getSupabaseStorageConfig(): SupabaseStorageConfig | null {
   const rawUrl = process.env.SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const secretKey = process.env.SUPABASE_SECRET_KEY?.trim();
+  const legacyServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const serverKey = secretKey || legacyServiceRoleKey;
 
-  if (Boolean(rawUrl) !== Boolean(serviceRoleKey)) {
-    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured together.");
+  if (Boolean(rawUrl) !== Boolean(serverKey)) {
+    throw new Error("SUPABASE_URL and a Supabase server secret must be configured together.");
   }
-  if (!rawUrl || !serviceRoleKey) return null;
+  if (!rawUrl || !serverKey) return null;
 
   const url = new URL(rawUrl);
   if (process.env.NODE_ENV === "production" && url.protocol !== "https:") {
@@ -39,16 +41,19 @@ function getSupabaseStorageConfig(): SupabaseStorageConfig | null {
 
   return {
     url: url.origin,
-    serviceRoleKey,
+    serverKey,
     bucket: process.env.SUPABASE_STORAGE_BUCKET?.trim() || defaultSupabaseBucket,
   };
 }
 
 function supabaseHeaders(config: SupabaseStorageConfig) {
-  return {
-    Authorization: `Bearer ${config.serviceRoleKey}`,
-    apikey: config.serviceRoleKey,
-  };
+  const headers: Record<string, string> = { apikey: config.serverKey };
+  // Las claves modernas sb_secret_ se envían únicamente como apikey.
+  // La service_role heredada es un JWT y también puede usarse como Bearer.
+  if (!config.serverKey.startsWith("sb_secret_")) {
+    headers.Authorization = `Bearer ${config.serverKey}`;
+  }
+  return headers;
 }
 
 function getStorageRoot() {
