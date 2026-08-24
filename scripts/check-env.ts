@@ -13,7 +13,10 @@ const envSchema = z.object({
   EMAIL_PROVIDER: z.enum(["resend"]).optional(),
   RESEND_API_KEY: z.string().min(1).optional(),
   EMAIL_FROM: z.string().email().or(z.string().regex(/^.+<[^<>\s]+@[^<>\s]+>$/)).optional(),
-  DOCUMENT_STORAGE_PATH: z.string().min(3),
+  SUPABASE_URL: z.url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+  SUPABASE_STORAGE_BUCKET: z.string().min(1).optional(),
+  DOCUMENT_STORAGE_PATH: z.string().min(3).optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   HOSTNAME: z.string().optional(),
   PORT: z.coerce.number().int().min(1).max(65535).optional(),
@@ -26,18 +29,50 @@ const envSchema = z.object({
   if (publicUrl.origin !== authUrl.origin) {
     context.addIssue({ code: "custom", path: ["NEXTAUTH_URL"], message: "Debe tener el mismo origen que NEXT_PUBLIC_SITE_URL." });
   }
-  const storagePath = path.resolve(env.DOCUMENT_STORAGE_PATH);
-  const publicPath = path.resolve(process.cwd(), "public");
-  const relative = path.relative(publicPath, storagePath);
-  if (env.NODE_ENV === "production" && !path.isAbsolute(env.DOCUMENT_STORAGE_PATH)) {
-    context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "Debe ser una ruta absoluta en producción." });
+
+  const hasSupabaseUrl = Boolean(env.SUPABASE_URL);
+  const hasSupabaseKey = Boolean(env.SUPABASE_SERVICE_ROLE_KEY);
+  if (hasSupabaseUrl !== hasSupabaseKey) {
+    context.addIssue({
+      code: "custom",
+      path: [hasSupabaseUrl ? "SUPABASE_SERVICE_ROLE_KEY" : "SUPABASE_URL"],
+      message: "SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben configurarse juntas.",
+    });
   }
-  if (!relative || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
-    context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "No puede estar dentro de /public." });
+
+  const supabaseStorageConfigured = hasSupabaseUrl && hasSupabaseKey;
+  if (supabaseStorageConfigured && env.NODE_ENV === "production") {
+    if (new URL(env.SUPABASE_URL!).protocol !== "https:") {
+      context.addIssue({ code: "custom", path: ["SUPABASE_URL"], message: "SUPABASE_URL debe usar HTTPS en producción." });
+    }
+    if (env.SUPABASE_SERVICE_ROLE_KEY!.startsWith("replace-with")) {
+      context.addIssue({ code: "custom", path: ["SUPABASE_SERVICE_ROLE_KEY"], message: "Configura la service role key real en el gestor de secretos." });
+    }
   }
-  if (env.NODE_ENV === "production" && /secure-storage[\\/]tramitexfederal$/i.test(env.DOCUMENT_STORAGE_PATH)) {
-    context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "Sustituye la ruta de ejemplo por la ruta privada real." });
+
+  if (!supabaseStorageConfigured) {
+    if (!env.DOCUMENT_STORAGE_PATH) {
+      context.addIssue({
+        code: "custom",
+        path: ["DOCUMENT_STORAGE_PATH"],
+        message: "Configura Supabase Storage o DOCUMENT_STORAGE_PATH para los documentos privados.",
+      });
+    } else {
+      const storagePath = path.resolve(env.DOCUMENT_STORAGE_PATH);
+      const publicPath = path.resolve(process.cwd(), "public");
+      const relative = path.relative(publicPath, storagePath);
+      if (env.NODE_ENV === "production" && !path.isAbsolute(env.DOCUMENT_STORAGE_PATH)) {
+        context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "Debe ser una ruta absoluta en producción." });
+      }
+      if (!relative || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
+        context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "No puede estar dentro de /public." });
+      }
+      if (env.NODE_ENV === "production" && /secure-storage[\\/]tramitexfederal$/i.test(env.DOCUMENT_STORAGE_PATH)) {
+        context.addIssue({ code: "custom", path: ["DOCUMENT_STORAGE_PATH"], message: "Sustituye la ruta de ejemplo por la ruta privada real." });
+      }
+    }
   }
+
   if (env.NODE_ENV === "production" && (!env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || !env.TURNSTILE_SECRET_KEY)) {
     context.addIssue({ code: "custom", path: ["TURNSTILE_SECRET_KEY"], message: "Turnstile es obligatorio para el registro en producción." });
   }
