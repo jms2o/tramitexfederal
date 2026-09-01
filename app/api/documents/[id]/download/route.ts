@@ -1,10 +1,11 @@
 import { getActiveSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { readPrivateFile } from "@/lib/security/private-storage";
+import { recordSecurityEvent } from "@/lib/security/security-events";
 
 export const runtime = "nodejs";
 
-export async function GET(_request: Request, context: RouteContext<"/api/documents/[id]/download">) {
+export async function GET(request: Request, context: RouteContext<"/api/documents/[id]/download">) {
   const session = await getActiveSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
   const { id } = await context.params;
@@ -12,7 +13,21 @@ export async function GET(_request: Request, context: RouteContext<"/api/documen
   if (!document) return new Response("Not found", { status: 404 });
   if (session.user.role === "CLIENT") {
     const client = await prisma.client.findUnique({ where: { userId: session.user.id }, select: { id: true } });
-    if (!client || client.id !== document.clientId) return new Response("Not found", { status: 404 });
+    if (!client || client.id !== document.clientId) {
+      const forwardedFor = request.headers.get("x-forwarded-for");
+      await recordSecurityEvent({
+        action: "Intento de acceso a documento ajeno",
+        severity: "HIGH",
+        userId: session.user.id,
+        entityType: "Document",
+        entityId: document.id,
+        ip: forwardedFor?.split(",")[0]?.trim() ?? null,
+        userAgent: request.headers.get("user-agent"),
+        details: { role: session.user.role },
+        alert: true,
+      });
+      return new Response("Not found", { status: 404 });
+    }
   }
 
   try {
