@@ -1,0 +1,5 @@
+import { resendRegistrationCode, verifyRegistrationCode } from "@/app/(auth)/actions";
+
+export function RegistrationVerificationForm({ verificationId }: { verificationId: string }) {
+  return <div className="mt-8 grid gap-5"><form action={verifyRegistrationCode} className="grid gap-5"><input type="hidden" name="verificationId" value={verificationId} /><label className="field">Código de verificación<input className="input text-center text-xl font-bold tracking-[0.35em]" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="000000" required /></label><p className="text-xs leading-5 text-slate-500">El código tiene 6 dígitos y vence en 10 minutos.</p><button className="button h-12" type="submit">Verificar correo y crear cuenta</button></form><form action={resendRegistrationCode} className="text-center"><input type="hidden" name="verificationId" value={verificationId} /><button type="submit" className="text-sm font-semibold text-blue hover:underline">Reenviar código</button></form></div>;
+}
