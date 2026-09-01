@@ -1,8 +1,30 @@
-import { ArrowRight, CheckCircle2, Search } from "lucide-react";
+"use client";
 
-type Tracking = { folio: string; service: string; status: string; updatedAt: Date; message: string } | null;
+import { FormEvent, useState, useTransition } from "react";
+import { ArrowRight, CheckCircle2, LoaderCircle, Search } from "lucide-react";
+import { lookupPublicTracking } from "@/app/(public)/actions";
 
-export function TrackingLookup({ folio, tracking }: { folio?: string; tracking?: Tracking }) {
-  const searched = Boolean(folio?.trim());
-  return <><form action="/seguimiento" className="mt-8 flex flex-col gap-3 sm:flex-row" method="get"><label className="relative flex-1"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} /><span className="sr-only">Folio de trámite</span><input className="input h-13 pl-11 uppercase" defaultValue={folio} name="folio" pattern="TRM-[0-9]{4}-[0-9]{5}" placeholder="Ej. TRM-2026-00001" required /></label><button className="button h-13" type="submit">Consultar <ArrowRight size={17} /></button></form>{searched && (tracking ? <section className="mt-7 rounded-2xl border border-blue-100 bg-blue-pale p-5"><div className="flex gap-3"><CheckCircle2 className="mt-0.5 shrink-0 text-blue" /><div className="flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-navy">{tracking.folio}</p><span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-blue">{tracking.status}</span></div><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-slate-500">Servicio</dt><dd className="mt-1 font-medium text-navy">{tracking.service}</dd></div><div><dt className="text-slate-500">Última actualización</dt><dd className="mt-1 font-medium text-navy">{new Intl.DateTimeFormat("es-MX", { dateStyle: "long" }).format(tracking.updatedAt)}</dd></div></dl><p className="mt-4 border-t border-blue-100 pt-4 text-sm leading-6 text-slate-700">{tracking.message}</p></div></div></section> : <section className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600"><p className="font-semibold text-navy">No encontramos un trámite con ese folio.</p><p className="mt-1">Verifica que el folio esté escrito correctamente o comunícate con nuestro equipo.</p></section>)}</>;
+type Tracking = { folio: string; service: string; status: string; updatedAt: string; message: string };
+
+export function TrackingLookup() {
+  const [pending, startTransition] = useTransition();
+  const [tracking, setTracking] = useState<Tracking | null>(null);
+  const [message, setMessage] = useState("");
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    setMessage("");
+    setTracking(null);
+    startTransition(async () => {
+      const result = await lookupPublicTracking(formData);
+      if (!result.ok) {
+        setMessage(result.message);
+        return;
+      }
+      setTracking(result.tracking);
+    });
+  }
+
+  return <><form onSubmit={submit} className="mt-8 grid gap-3 sm:grid-cols-2"><label className="relative"><Search className="absolute left-4 top-[2.65rem] -translate-y-1/2 text-slate-400" size={19} /><span className="field">Folio</span><input className="input h-13 pl-11 uppercase" name="folio" pattern="TRM-[0-9]{4}-[0-9]{5}" placeholder="Ej. TRM-2026-00001" autoComplete="off" required /></label><label className="field">Correo del expediente<input className="input h-13" name="email" type="email" autoComplete="email" required /></label><button className="button h-13 sm:col-span-2 sm:justify-self-start" disabled={pending} type="submit">{pending ? <LoaderCircle className="animate-spin" size={17} /> : <ArrowRight size={17} />}{pending ? "Consultando" : "Consultar"}</button></form>{message && <section className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm leading-6 text-slate-600"><p className="font-semibold text-navy">No fue posible mostrar el seguimiento.</p><p className="mt-1">{message}</p></section>}{tracking && <section className="mt-7 rounded-2xl border border-blue-100 bg-blue-pale p-5"><div className="flex gap-3"><CheckCircle2 className="mt-0.5 shrink-0 text-blue" /><div className="flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-navy">{tracking.folio}</p><span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-blue">{tracking.status}</span></div><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-slate-500">Servicio</dt><dd className="mt-1 font-medium text-navy">{tracking.service}</dd></div><div><dt className="text-slate-500">Última actualización</dt><dd className="mt-1 font-medium text-navy">{new Intl.DateTimeFormat("es-MX", { dateStyle: "long" }).format(new Date(tracking.updatedAt))}</dd></div></dl><p className="mt-4 border-t border-blue-100 pt-4 text-sm leading-6 text-slate-700">{tracking.message}</p></div></div></section>}</>;
 }
