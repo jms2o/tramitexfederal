@@ -28,7 +28,7 @@ export async function getClientWizardData() {
 
 export async function getClientProcedures() {
   const { client } = await requireClient();
-  return prisma.procedure.findMany({ where: { clientId: client.id }, include: { service: { select: { name: true } }, requirements: { include: { documents: { include: { document: true }, orderBy: { createdAt: "desc" }, take: 1 } } } }, orderBy: { updatedAt: "desc" } });
+  return prisma.procedure.findMany({ where: { clientId: client.id }, include: { service: { select: { name: true } }, requirements: { select: { isComplete: true } } }, orderBy: { updatedAt: "desc" } });
 }
 
 export async function getClientProcedure(id: string) {
@@ -37,7 +37,19 @@ export async function getClientProcedure(id: string) {
     where: { id, clientId: client.id },
     include: {
       service: { select: { name: true } },
-      requirements: { orderBy: { createdAt: "asc" }, include: { documents: { include: { document: true }, orderBy: { createdAt: "desc" } } } },
+      requirements: {
+        orderBy: { createdAt: "asc" },
+        select: {
+          id: true,
+          label: true,
+          isRequired: true,
+          documents: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { document: { select: { id: true, originalName: true, status: true, createdAt: true } } },
+          },
+        },
+      },
       statusHistory: { orderBy: { createdAt: "desc" }, select: { toStatus: true, publicMessage: true, createdAt: true } },
     },
   });
@@ -45,7 +57,18 @@ export async function getClientProcedure(id: string) {
 
 export async function getClientDocuments() {
   const { client } = await requireClient();
-  return prisma.document.findMany({ where: { clientId: client.id }, include: { procedures: { include: { procedure: { select: { id: true, folio: true } } } } }, orderBy: { createdAt: "desc" } });
+  return prisma.document.findMany({
+    where: { clientId: client.id },
+    select: {
+      id: true,
+      originalName: true,
+      category: true,
+      status: true,
+      createdAt: true,
+      procedures: { select: { procedure: { select: { id: true, folio: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function getClientTickets() {
