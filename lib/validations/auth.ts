@@ -17,6 +17,15 @@ export const registrationSchema = z.object({
   }
 });
 
+export const registrationVerificationSchema = z.object({
+  verificationId: z.string().trim().min(10).max(64),
+  code: z.string().trim().regex(/^\d{6}$/, "Ingresa el código de 6 dígitos."),
+});
+
+export const registrationResendSchema = z.object({
+  verificationId: z.string().trim().min(10).max(64),
+});
+
 export const passwordResetRequestSchema = z.object({
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
 });
