@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createHash } from "crypto";
-import { Prisma } from "@/app/generated/prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { sendTransactionalEmail } from "@/lib/email/transactional";
 
@@ -51,7 +50,7 @@ export async function recordSecurityEvent(event: SecurityEvent) {
     }
   }
 
-  const metadata: Prisma.InputJsonObject = {
+  const metadata = {
     severity: event.severity,
     ...(event.ip ? { ipFingerprint: securityFingerprint(event.ip) } : {}),
     ...(event.userAgent ? { userAgent: event.userAgent.slice(0, 220) } : {}),
