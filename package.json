@@ -26,6 +26,8 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@swc/helpers": "0.5.23",
+    "@tailwindcss/postcss": "^4",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "file-type": "^22.0.2",
@@ -37,10 +39,10 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
+    "tailwindcss": "^4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.21.0",
     "@types/react": "^19",
@@ -48,7 +50,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "prisma": "^7.9.1",
-    "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5",
     "vitest": "^4.1.10"
