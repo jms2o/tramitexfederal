@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  outputFileTracingIncludes: {
+    "*": ["./node_modules/@swc/helpers/esm/**"],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "12mb",
