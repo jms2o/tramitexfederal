@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, BadgeCheck, Building2, CheckCircle2, ClipboardCheck, FileText, Headphones, MessageCircle, ShieldCheck, Truck, UsersRound } from "lucide-react";
 import { services } from "@/lib/data/services";
+import { whatsappUrl } from "@/lib/data/contact";
 
 const process: [LucideIcon, string, string][] = [[UsersRound, "Solicita asesoría", "Nos compartes qué trámite necesitas realizar."], [FileText, "Revisamos tus documentos", "Validamos que tengas la documentación necesaria."], [ClipboardCheck, "Integramos tu expediente", "Resolvemos cualquier documento faltante."], [Truck, "Gestionamos el trámite", "Iniciamos y damos seguimiento ante la SICT."], [CheckCircle2, "Entrega", "Recibes tu documentación cuando esté lista."]];
 const benefits: [LucideIcon, string][] = [[Headphones, "Atención personalizada"], [BadgeCheck, "Seguimiento de tu trámite"], [Building2, "Personas y empresas"]];
@@ -16,11 +17,22 @@ export default function Home() {
           <div className="flex flex-col justify-center px-7 py-12 sm:px-12 lg:px-14">
             <p className="eyebrow inline-flex w-fit rounded-full border border-blue/30 bg-blue-pale px-3 py-1">Trámites ante la SICT</p>
             <h1 className="mt-5 text-4xl font-bold leading-[1.04] tracking-[-.045em] text-navy sm:text-5xl">Trámites federales <span className="text-blue">sin complicaciones</span></h1>
-            <p className="mt-5 max-w-lg text-sm leading-6 text-slate-600 sm:text-base">Gestión y asesoría especializada en trámites ante la SICT para particulares, transportistas y empresas.</p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link className="button" href="/contacto">Iniciar mi trámite <ArrowRight size={17} /></Link>
-              <a className="button button-outline" href="https://wa.me/525539553969" target="_blank" rel="noreferrer">Hablar por WhatsApp <MessageCircle size={17} /></a>
+            <p className="mt-5 max-w-lg text-sm leading-6 text-slate-600 sm:text-base">Elige cómo quieres avanzar: realiza tu trámite en línea o recibe atención directa de un asesor.</p>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <Link href="/cuenta/iniciar-tramite" className="group rounded-2xl bg-blue p-5 text-white shadow-[0_10px_24px_rgba(11,87,208,.2)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(11,87,208,.28)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
+                <p className="text-[10px] font-bold uppercase tracking-[.14em] text-blue-100">Quiero hacerlo en línea</p>
+                <span className="mt-3 flex items-center justify-between gap-3 text-base font-bold">Iniciar mi trámite <ArrowRight className="shrink-0 transition-transform group-hover:translate-x-1" size={18} /></span>
+                <p className="mt-2 text-xs leading-5 text-blue-100">Captura tus datos y documentos desde tu cuenta.</p>
+              </Link>
+
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="group rounded-2xl border border-blue/20 bg-blue-pale/60 p-5 text-navy transition duration-200 hover:-translate-y-0.5 hover:border-blue/40 hover:bg-blue-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
+                <p className="text-[10px] font-bold uppercase tracking-[.14em] text-blue">Prefiero que me atiendan</p>
+                <span className="mt-3 flex items-center justify-between gap-3 text-base font-bold">Hablar con un asesor <MessageCircle className="shrink-0 text-blue" size={18} /></span>
+                <p className="mt-2 text-xs leading-5 text-slate-600">Abre WhatsApp con un mensaje listo para enviarnos.</p>
+              </a>
             </div>
+
             <div className="mt-9 grid grid-cols-3 gap-3">{benefits.map(([Icon, label]) => <div className="flex items-center gap-2 text-[11px] font-medium leading-4 text-slate-600" key={label}><span className="grid size-8 shrink-0 place-items-center rounded-full bg-blue-pale text-blue"><Icon size={15} /></span>{label}</div>)}</div>
           </div>
           <div className="relative min-h-[18rem] bg-gradient-to-br from-[#eff6ff] via-[#dcecff] to-[#86b8f7]">
