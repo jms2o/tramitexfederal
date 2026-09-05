@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { ArrowRight, BadgeCheck, Building2, CheckCircle2, ClipboardCheck, FileText, Headphones, MessageCircle, ShieldCheck, Truck, UsersRound } from "lucide-react";
 import { services } from "@/lib/data/services";
-import { whatsappUrl } from "@/lib/data/contact";
+import { TrackedWhatsAppLink } from "@/components/public/tracked-whatsapp-link";
 
 const process: [LucideIcon, string, string][] = [[UsersRound, "Solicita asesoría", "Nos compartes qué trámite necesitas realizar."], [FileText, "Revisamos tus documentos", "Validamos que tengas la documentación necesaria."], [ClipboardCheck, "Integramos tu expediente", "Resolvemos cualquier documento faltante."], [Truck, "Gestionamos el trámite", "Iniciamos y damos seguimiento ante la SICT."], [CheckCircle2, "Entrega", "Recibes tu documentación cuando esté lista."]];
 const benefits: [LucideIcon, string][] = [[Headphones, "Atención personalizada"], [BadgeCheck, "Seguimiento de tu trámite"], [Building2, "Personas y empresas"]];
@@ -26,11 +26,11 @@ export default function Home() {
                 <p className="mt-2 text-xs leading-5 text-blue-100">Captura tus datos y documentos desde tu cuenta.</p>
               </Link>
 
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="group rounded-2xl border border-blue/20 bg-blue-pale/60 p-5 text-navy transition duration-200 hover:-translate-y-0.5 hover:border-blue/40 hover:bg-blue-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
+              <TrackedWhatsAppLink source="home-hero" target="_blank" rel="noreferrer" className="group rounded-2xl border border-blue/20 bg-blue-pale/60 p-5 text-navy transition duration-200 hover:-translate-y-0.5 hover:border-blue/40 hover:bg-blue-pale focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue">
                 <p className="text-[10px] font-bold uppercase tracking-[.14em] text-blue">Prefiero que me atiendan</p>
                 <span className="mt-3 flex items-center justify-between gap-3 text-base font-bold">Hablar con un asesor <MessageCircle className="shrink-0 text-blue" size={18} /></span>
                 <p className="mt-2 text-xs leading-5 text-slate-600">Abre WhatsApp con un mensaje listo para enviarnos.</p>
-              </a>
+              </TrackedWhatsAppLink>
             </div>
 
             <div className="mt-9 grid grid-cols-3 gap-3">{benefits.map(([Icon, label]) => <div className="flex items-center gap-2 text-[11px] font-medium leading-4 text-slate-600" key={label}><span className="grid size-8 shrink-0 place-items-center rounded-full bg-blue-pale text-blue"><Icon size={15} /></span>{label}</div>)}</div>
