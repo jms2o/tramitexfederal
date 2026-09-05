@@ -27,9 +27,25 @@ export async function getDashboardData() {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const chartStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const months = Array.from({ length: 6 }, (_, index) => new Date(now.getFullYear(), now.getMonth() - 5 + index, 1));
 
-  const [activeProcedures, waitingDocuments, underReview, inProgress, clients, monthlyPayments, procedures, statusGroups, activities] = await Promise.all([
+  const [
+    activeProcedures,
+    waitingDocuments,
+    underReview,
+    inProgress,
+    clients,
+    monthlyPayments,
+    procedures,
+    statusGroups,
+    activities,
+    whatsappClicksTotal,
+    whatsappClicks24h,
+    whatsappBubbleClicks24h,
+    whatsappHeroClicks24h,
+    whatsappVisitors24h,
+  ] = await Promise.all([
     prisma.procedure.count({ where: { status: { in: activeStatuses } } }),
     prisma.procedure.count({ where: { status: ProcedureStatus.WAITING_DOCUMENTS } }),
     prisma.procedure.count({ where: { status: ProcedureStatus.UNDER_REVIEW } }),
@@ -38,7 +54,16 @@ export async function getDashboardData() {
     prisma.payment.aggregate({ where: { status: PaymentStatus.PAID, paidAt: { gte: startOfMonth } }, _sum: { amount: true } }),
     prisma.procedure.findMany({ where: { createdAt: { gte: chartStart } }, select: { createdAt: true } }),
     prisma.procedure.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.activityLog.findMany({ take: 8, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } }),
+    prisma.activityLog.findMany({ where: { action: { not: "WHATSAPP_CLICK" } }, take: 8, orderBy: { createdAt: "desc" }, include: { user: { select: { name: true } } } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK" } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", createdAt: { gte: last24Hours } } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppBubble", createdAt: { gte: last24Hours } } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppHero", createdAt: { gte: last24Hours } } }),
+    prisma.activityLog.findMany({
+      where: { action: "WHATSAPP_CLICK", createdAt: { gte: last24Hours }, entityId: { not: null } },
+      distinct: ["entityId"],
+      select: { entityId: true },
+    }),
   ]);
 
   const countsByMonth = new Map<string, number>();
@@ -53,6 +78,13 @@ export async function getDashboardData() {
 
   return {
     metrics: { activeProcedures, waitingDocuments, underReview, inProgress, clients, monthlyIncome: Number(monthlyPayments._sum.amount ?? 0) },
+    whatsapp: {
+      totalClicks: whatsappClicksTotal,
+      clicks24h: whatsappClicks24h,
+      bubbleClicks24h: whatsappBubbleClicks24h,
+      heroClicks24h: whatsappHeroClicks24h,
+      visitors24h: whatsappVisitors24h.length,
+    },
     proceduresByMonth: months.map((month) => ({ month: monthLabel(month), procedures: countsByMonth.get(monthKey(month)) ?? 0 })),
     proceduresByStatus: statusGroups.map((group) => ({ name: statusLabels[group.status], value: group._count._all })),
     activity: activities.map((activity) => ({ id: activity.id, action: activity.action, entityType: activity.entityType, userName: activity.user?.name ?? "Sistema", createdAt: activity.createdAt.toISOString() })),
