@@ -18,8 +18,10 @@ export function DashboardView({ data }: { data: DashboardData }) {
 
   const whatsappMetrics = [
     { label: "Personas estimadas · 24 h", value: data.whatsapp.visitors24h, icon: UsersRound },
-    { label: "Clics en burbuja · 24 h", value: data.whatsapp.bubbleClicks24h, icon: MessageCircle },
-    { label: "Clics en botón del home · 24 h", value: data.whatsapp.heroClicks24h, icon: MousePointerClick },
+    { label: "Burbuja pública · 24 h", value: data.whatsapp.bubbleClicks24h, icon: MessageCircle },
+    { label: "Botón del home · 24 h", value: data.whatsapp.heroClicks24h, icon: MousePointerClick },
+    { label: "Ayuda en panel cliente · 24 h", value: data.whatsapp.clientHelpClicks24h, icon: MessageCircle },
+    { label: "Ayuda con documentos · 24 h", value: data.whatsapp.documentHelpClicks24h, icon: MessageCircle },
     { label: "Clics acumulados", value: data.whatsapp.totalClicks, icon: Activity },
   ];
 
@@ -31,10 +33,10 @@ export function DashboardView({ data }: { data: DashboardData }) {
     <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start gap-3">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e9fbef] text-[#128c4a]"><MessageCircle size={21} /></span>
-        <div><h2 className="font-bold text-navy">WhatsApp</h2><p className="mt-1 text-sm text-slate-500">Uso de la burbuja flotante y del botón de asesoría del home.</p></div>
+        <div><h2 className="font-bold text-navy">WhatsApp</h2><p className="mt-1 text-sm text-slate-500">Uso de los accesos a WhatsApp en el sitio público y dentro del panel del cliente.</p></div>
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{whatsappMetrics.map((metric) => { const Icon = metric.icon; return <div key={metric.label} className="rounded-xl bg-slate-50 p-4"><div className="flex items-center gap-2 text-slate-500"><Icon size={16} /><span className="text-xs font-medium">{metric.label}</span></div><p className="mt-3 text-2xl font-bold text-navy">{metric.value}</p></div>; })}</div>
-      <p className="mt-4 text-xs leading-5 text-slate-500">Este contador mide aperturas de WhatsApp desde la página. No confirma que el visitante haya enviado el mensaje dentro de WhatsApp.</p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{whatsappMetrics.map((metric) => { const Icon = metric.icon; return <div key={metric.label} className="rounded-xl bg-slate-50 p-4"><div className="flex items-center gap-2 text-slate-500"><Icon size={16} /><span className="text-xs font-medium">{metric.label}</span></div><p className="mt-3 text-2xl font-bold text-navy">{metric.value}</p></div>; })}</div>
+      <p className="mt-4 text-xs leading-5 text-slate-500">Este contador mide aperturas de WhatsApp desde la plataforma. Los clics de “Ayuda con documentos” guardan además el paso, el documento y el folio como contexto interno. No confirma que el usuario haya enviado el mensaje dentro de WhatsApp.</p>
     </section>
 
     <DashboardCharts proceduresByMonth={data.proceduresByMonth} proceduresByStatus={data.proceduresByStatus} />
