@@ -43,6 +43,7 @@ export async function getClientProcedure(id: string) {
           id: true,
           label: true,
           isRequired: true,
+          notes: true,
           documents: {
             orderBy: { createdAt: "desc" },
             take: 1,
