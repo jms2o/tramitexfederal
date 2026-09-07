@@ -7,8 +7,15 @@ import { prisma } from "@/lib/db/prisma";
 import { FileValidationError, removePrivateFile, savePrivateFile } from "@/lib/security/private-storage";
 import { advisorAssistanceSchema, clientProcedureSchema, clientProfileSchema, supportTicketSchema } from "@/lib/validations/client-portal";
 
+const requirementAssistanceMarker = "[REQUIERE_ASESORIA]";
+
 function formValues(formData: FormData) {
   return Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, typeof value === "string" ? value : ""]));
+}
+
+function canDeferRequirement(label: string) {
+  const normalized = label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return normalized.includes("poliza de responsabilidad civil") || normalized.includes("verificacion fisico-mecanica");
 }
 
 export async function createClientProcedure(formData: FormData) {
@@ -76,6 +83,56 @@ export async function createAdvisorAssistanceRequest(formData: FormData) {
   return { ok: true, ticketId: ticket.id, serviceName: service.name, contactMethod: contactLabels[parsed.data.contactMethod] };
 }
 
+export async function requestRequirementAssistance(formData: FormData) {
+  const { session, client } = await requireClient();
+  const procedureId = formData.get("procedureId");
+  const requirementId = formData.get("requirementId");
+  if (typeof procedureId !== "string" || typeof requirementId !== "string") return { ok: false, message: "Solicitud inválida." };
+
+  const requirement = await prisma.procedureRequirement.findFirst({
+    where: { id: requirementId, procedureId, procedure: { clientId: client.id } },
+    select: { id: true, label: true, procedure: { select: { id: true, folio: true, service: { select: { name: true } } } } },
+  });
+  if (!requirement) return { ok: false, message: "No tienes acceso a este requisito." };
+  if (!canDeferRequirement(requirement.label)) return { ok: false, message: "Este documento es obligatorio para continuar." };
+
+  const subject = `[DOCUMENTO] Ayuda con ${requirement.label}`;
+  const note = `${requirementAssistanceMarker} Cliente indicó que aún no cuenta con este documento y solicita apoyo para obtenerlo.`;
+
+  const ticket = await prisma.$transaction(async (tx) => {
+    await tx.procedureRequirement.update({ where: { id: requirement.id }, data: { isComplete: false, completedAt: null, notes: note } });
+    const existing = await tx.supportTicket.findFirst({
+      where: { clientId: client.id, procedureId: requirement.procedure.id, subject, status: { in: ["OPEN", "IN_PROGRESS"] } },
+      select: { id: true },
+    });
+    const created = existing ?? await tx.supportTicket.create({
+      data: {
+        clientId: client.id,
+        procedureId: requirement.procedure.id,
+        subject,
+        messages: { create: { authorId: session.user.id, body: `Necesito ayuda para obtener el documento: ${requirement.label}.\nFolio: ${requirement.procedure.folio}\nTrámite: ${requirement.procedure.service.name}` } },
+      },
+      select: { id: true },
+    });
+    await tx.activityLog.create({
+      data: {
+        userId: session.user.id,
+        action: "Cliente solicitó ayuda con un documento",
+        entityType: "ProcedureRequirement",
+        entityId: requirement.id,
+        metadata: { procedureId: requirement.procedure.id, folio: requirement.procedure.folio, requirement: requirement.label, ticketId: created.id },
+      },
+    });
+    return created;
+  });
+
+  revalidatePath(`/cuenta/mis-tramites/${procedureId}`);
+  revalidatePath("/cuenta/soporte");
+  revalidatePath(`/admin/expedientes/${client.id}`);
+  revalidatePath("/admin/expedientes");
+  return { ok: true, ticketId: ticket.id, folio: requirement.procedure.folio, serviceName: requirement.procedure.service.name };
+}
+
 export async function uploadClientRequirementDocument(formData: FormData) {
   const { session, client } = await requireClient();
   const procedureId = formData.get("procedureId");
@@ -100,7 +157,7 @@ export async function uploadClientRequirementDocument(formData: FormData) {
       }
       const created = await tx.document.create({ data: { clientId: client.id, uploadedById: session.user.id, category: requirement.label, status: "RECEIVED", replacesDocumentId: typeof replacesDocumentId === "string" && replacesDocumentId ? replacesDocumentId : undefined, ...saved } });
       await tx.procedureDocument.create({ data: { procedureId, requirementId: requirement.id, documentId: created.id } });
-      await tx.procedureRequirement.update({ where: { id: requirement.id }, data: { isComplete: true, completedAt: new Date() } });
+      await tx.procedureRequirement.update({ where: { id: requirement.id }, data: { isComplete: true, completedAt: new Date(), notes: null } });
       await tx.activityLog.create({ data: { userId: session.user.id, action: replacesDocumentId ? "Cliente reemplazó un documento" : "Cliente subió un documento", entityType: "Document", entityId: created.id } });
       return created;
     });
