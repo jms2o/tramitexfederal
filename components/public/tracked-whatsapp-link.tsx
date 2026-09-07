@@ -1,18 +1,23 @@
 "use client";
 
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { whatsappUrl } from "@/lib/data/contact";
+import { whatsappMessage, whatsappNumber } from "@/lib/data/contact";
 
-type WhatsAppSource = "floating-bubble" | "home-hero";
+type WhatsAppSource = "floating-bubble" | "home-hero" | "client-help" | "document-help";
+type ContextValue = string | number | boolean | null | undefined;
 
 type Props = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href" | "onClick"> & {
   source: WhatsAppSource;
   children: ReactNode;
+  message?: string;
+  context?: Record<string, ContextValue>;
 };
 
-export function TrackedWhatsAppLink({ source, children, ...props }: Props) {
+export function TrackedWhatsAppLink({ source, children, message, context, ...props }: Props) {
+  const href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message ?? whatsappMessage)}`;
+
   function trackClick() {
-    const payload = JSON.stringify({ source, path: window.location.pathname });
+    const payload = JSON.stringify({ source, path: window.location.pathname, context });
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/analytics/whatsapp-click", new Blob([payload], { type: "application/json" }));
       return;
@@ -26,5 +31,5 @@ export function TrackedWhatsAppLink({ source, children, ...props }: Props) {
     });
   }
 
-  return <a {...props} href={whatsappUrl} onClick={trackClick}>{children}</a>;
+  return <a {...props} href={href} onClick={trackClick}>{children}</a>;
 }

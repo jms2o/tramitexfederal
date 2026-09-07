@@ -6,9 +6,23 @@ import { securityFingerprint } from "@/lib/security/security-events";
 const sourceToEntityType = {
   "floating-bubble": "WhatsAppBubble",
   "home-hero": "WhatsAppHero",
+  "client-help": "WhatsAppClientHelp",
+  "document-help": "WhatsAppDocumentHelp",
 } as const;
 
 type WhatsAppSource = keyof typeof sourceToEntityType;
+
+function sanitizeContext(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const entries = Object.entries(value as Record<string, unknown>).slice(0, 10);
+  const clean: Record<string, string | number | boolean | null> = {};
+  for (const [key, raw] of entries) {
+    const safeKey = key.slice(0, 40);
+    if (typeof raw === "string") clean[safeKey] = raw.slice(0, 180);
+    else if (typeof raw === "number" || typeof raw === "boolean" || raw === null) clean[safeKey] = raw;
+  }
+  return Object.keys(clean).length ? clean : undefined;
+}
 
 export async function POST(request: Request) {
   const requestHeaders = await headers();
@@ -17,13 +31,13 @@ export async function POST(request: Request) {
   const userAgent = requestHeaders.get("user-agent")?.slice(0, 220) ?? null;
   const requestKey = getRequestKey(forwardedFor, "whatsapp-analytics");
 
-  if (!checkRateLimit(`whatsapp-click:${requestKey}`, 30, 60 * 60 * 1000).allowed) {
+  if (!checkRateLimit(`whatsapp-click:${requestKey}`, 40, 60 * 60 * 1000).allowed) {
     return new Response(null, { status: 204 });
   }
 
-  let body: { source?: unknown; path?: unknown };
+  let body: { source?: unknown; path?: unknown; context?: unknown };
   try {
-    body = await request.json() as { source?: unknown; path?: unknown };
+    body = await request.json() as { source?: unknown; path?: unknown; context?: unknown };
   } catch {
     return new Response(null, { status: 204 });
   }
@@ -35,6 +49,7 @@ export async function POST(request: Request) {
   const source = body.source as WhatsAppSource;
   const entityType = sourceToEntityType[source];
   const path = typeof body.path === "string" ? body.path.slice(0, 160) : "/";
+  const context = sanitizeContext(body.context);
   const visitorId = securityFingerprint(`${ip ?? "unknown"}|${userAgent ?? "unknown"}`);
   const duplicateCutoff = new Date(Date.now() - 2 * 60 * 1000);
 
@@ -54,7 +69,7 @@ export async function POST(request: Request) {
         action: "WHATSAPP_CLICK",
         entityType,
         entityId: visitorId,
-        metadata: { source, path },
+        metadata: { source, path, ...(context ? { context } : {}) },
       },
     });
   }

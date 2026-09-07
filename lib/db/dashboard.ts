@@ -44,6 +44,8 @@ export async function getDashboardData() {
     whatsappClicks24h,
     whatsappBubbleClicks24h,
     whatsappHeroClicks24h,
+    whatsappClientHelpClicks24h,
+    whatsappDocumentHelpClicks24h,
     whatsappVisitors24h,
   ] = await Promise.all([
     prisma.procedure.count({ where: { status: { in: activeStatuses } } }),
@@ -59,6 +61,8 @@ export async function getDashboardData() {
     prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", createdAt: { gte: last24Hours } } }),
     prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppBubble", createdAt: { gte: last24Hours } } }),
     prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppHero", createdAt: { gte: last24Hours } } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppClientHelp", createdAt: { gte: last24Hours } } }),
+    prisma.activityLog.count({ where: { action: "WHATSAPP_CLICK", entityType: "WhatsAppDocumentHelp", createdAt: { gte: last24Hours } } }),
     prisma.activityLog.findMany({
       where: { action: "WHATSAPP_CLICK", createdAt: { gte: last24Hours }, entityId: { not: null } },
       distinct: ["entityId"],
@@ -83,6 +87,8 @@ export async function getDashboardData() {
       clicks24h: whatsappClicks24h,
       bubbleClicks24h: whatsappBubbleClicks24h,
       heroClicks24h: whatsappHeroClicks24h,
+      clientHelpClicks24h: whatsappClientHelpClicks24h,
+      documentHelpClicks24h: whatsappDocumentHelpClicks24h,
       visitors24h: whatsappVisitors24h.length,
     },
     proceduresByMonth: months.map((month) => ({ month: monthLabel(month), procedures: countsByMonth.get(monthKey(month)) ?? 0 })),
