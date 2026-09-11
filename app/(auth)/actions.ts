@@ -19,6 +19,7 @@ import {
 
 const dummyPasswordHash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxcG2VjE5Kx7b7wVj1uGfVQ4ZQe";
 const registrationCodeTtlMs = 10 * 60 * 1000;
+const termsVersion = "2026-09-11";
 
 function formValues(formData: FormData) {
   return Object.fromEntries(Array.from(formData.entries()).map(([key, value]) => [key, typeof value === "string" ? value : ""]));
@@ -85,6 +86,7 @@ export async function requestRegistrationCode(formData: FormData) {
   await prisma.$transaction([
     prisma.passwordResetToken.deleteMany({ where: { userId: pendingUser.id } }),
     prisma.passwordResetToken.create({ data: { userId: pendingUser.id, tokenHash, expiresAt } }),
+    prisma.activityLog.create({ data: { userId: pendingUser.id, action: "Aceptó Términos y Condiciones", entityType: "Terms", entityId: termsVersion, metadata: { version: termsVersion, source: "registro" } } }),
   ]);
 
   try {

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, BadgeCheck, Building2, CheckCircle2, ClipboardCheck, FileText, Headphones, MessageCircle, ShieldCheck, Truck, UsersRound } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, CheckCircle2, ClipboardCheck, FileText, HandCoins, Headphones, MessageCircle, ShieldCheck, Truck, UsersRound } from "lucide-react";
 import { services } from "@/lib/data/services";
 import { TrackedWhatsAppLink } from "@/components/public/tracked-whatsapp-link";
 
@@ -15,7 +15,10 @@ export default function Home() {
       <div className="overflow-hidden rounded-2xl bg-white shadow-[0_12px_36px_rgba(15,44,98,.11)]">
         <div className="grid min-h-[31rem] lg:grid-cols-[.95fr_1.05fr]">
           <div className="flex flex-col justify-center px-7 py-12 sm:px-12 lg:px-14">
-            <p className="eyebrow inline-flex w-fit rounded-full border border-blue/30 bg-blue-pale px-3 py-1">Trámites ante la SICT</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="eyebrow inline-flex w-fit rounded-full border border-blue/30 bg-blue-pale px-3 py-1">Trámites ante la SICT</span>
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-extrabold uppercase tracking-[.1em] text-emerald-700" title="Sujeto a las condiciones indicadas en la cotización"><HandCoins size={14} aria-hidden="true" />Pago contra entrega</span>
+            </div>
             <h1 className="mt-5 text-4xl font-bold leading-[1.04] tracking-[-.045em] text-navy sm:text-5xl">Trámites federales <span className="text-blue">sin complicaciones</span></h1>
             <p className="mt-5 max-w-lg text-sm leading-6 text-slate-600 sm:text-base">Elige cómo quieres avanzar: realiza tu trámite en línea o recibe atención directa de un asesor.</p>
 

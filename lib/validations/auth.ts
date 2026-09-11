@@ -9,6 +9,7 @@ export const registrationSchema = z.object({
   email: z.string().trim().email("Ingresa un correo válido.").max(254).transform((value) => value.toLowerCase()),
   password: z.string().min(12, "La contraseña debe tener al menos 12 caracteres.").max(128),
   confirmPassword: z.string().max(128),
+  acceptTerms: z.literal("yes", { message: "Debes aceptar los Términos y Condiciones." }),
   turnstileToken: z.string().min(1, "Completa la verificación de seguridad."),
 }).superRefine((data, context) => {
   if (data.password !== data.confirmPassword) context.addIssue({ code: "custom", path: ["confirmPassword"], message: "Las contraseñas no coinciden." });
