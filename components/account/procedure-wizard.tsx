@@ -15,7 +15,7 @@ const steps = ["Selecciona tu trámite", "Tus datos", "Documentos", "Informació
 
 function canRequestDocumentHelp(label: string) {
   const normalized = label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  return normalized.includes("poliza de responsabilidad civil") || normalized.includes("verificacion fisico-mecanica");
+  return normalized.includes("poliza de responsabilidad civil") || normalized.includes("verificacion fisico-mecanica") || (normalized.includes("denuncia") && (normalized.includes("robo") || normalized.includes("extravio")));
 }
 
 export function ProcedureWizard({ client, services }: { client: Client; services: Service[] }) {
