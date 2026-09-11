@@ -55,5 +55,8 @@
     "tsx": "^4.23.12",
     "vitest": "^4.1.10"
   },
+  "overrides": {
+    "mysql2": "3.23.1"
+  },
   "packageManager": "npm@11.6.0"
 }
